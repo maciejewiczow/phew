@@ -4,6 +4,8 @@ __version__ = "0.0.2"
 # to minimise memory fragmentation as we sometimes want to
 # allocate relatively large blocks of ram.
 import gc, os, machine
+
+from src.lib.phew.phew.exceptions import APNotFoundException, ConnectingFailedException, WrongPasswordException
 gc.threshold(50000)
 
 # phew! the Pico (or Python) HTTP Endpoint Wrangler
@@ -25,13 +27,13 @@ def get_ip_address():
     return None
 
 def is_connected_to_wifi():
-  import network, time
+  import network
   wlan = network.WLAN(network.STA_IF)
   return wlan.isconnected()
 
 # helper method to quickly get connected to wifi
-def connect_to_wifi(ssid, password, timeout_seconds=30):
-  import network, time
+async def connect_to_wifi(ssid, password, timeout_seconds=30):
+  import network, time, uasyncio
 
   statuses = {
     network.STAT_IDLE: "idle",
@@ -43,7 +45,7 @@ def connect_to_wifi(ssid, password, timeout_seconds=30):
   }
 
   wlan = network.WLAN(network.STA_IF)
-  wlan.active(True)    
+  wlan.active(True)
   wlan.connect(ssid, password)
   start = time.ticks_ms()
   status = wlan.status()
@@ -54,10 +56,21 @@ def connect_to_wifi(ssid, password, timeout_seconds=30):
     if status != new_status:
       logging.debug(f"  - {statuses[status]}")
       status = new_status
-    time.sleep(0.25)
+
+    if status == network.STAT_WRONG_PASSWORD:
+      raise WrongPasswordException()
+
+    if status == network.STAT_CONNECT_FAIL:
+      raise ConnectingFailedException()
+
+    if status == network.STAT_NO_AP_FOUND:
+      raise APNotFoundException()
+
+    await uasyncio.sleep(0.25)
 
   if wlan.status() == network.STAT_GOT_IP:
     return wlan.ifconfig()[0]
+
   return None
 
 
@@ -65,12 +78,12 @@ def connect_to_wifi(ssid, password, timeout_seconds=30):
 def access_point(ssid, password = None):
   import network
 
-  # start up network in access point mode  
+  # start up network in access point mode
   wlan = network.WLAN(network.AP_IF)
   wlan.config(essid=ssid)
   if password:
     wlan.config(password=password)
-  else:    
+  else:
     wlan.config(security=0) # disable password
   wlan.active(True)
 
