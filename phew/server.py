@@ -47,6 +47,7 @@ class Request:
     self.form = {}
     self.data = {}
     self.query = {}
+    self.headers = {}
     query_string_start = uri.find("?") if uri.find("?") != -1 else len(uri)
     self.path = uri[:query_string_start]
     self.query_string = uri[query_string_start + 1:]
@@ -138,7 +139,7 @@ class Route:
         parameters[name] = compare
 
     return self.handler(request, **parameters)
-        
+
   def __str__(self):
     return f"""\
 path: {self.path}
@@ -209,7 +210,7 @@ async def _parse_json_body(reader, headers):
 
 
 status_message_map = {
-  200: "OK", 201: "Created", 202: "Accepted", 
+  200: "OK", 201: "Created", 202: "Accepted",
   203: "Non-Authoritative Information", 204: "No Content",
   205: "Reset Content", 206: "Partial Content", 300: "Multiple Choices",
   301: "Moved Permanently", 302: "Found", 303: "See Other",
@@ -218,7 +219,7 @@ status_message_map = {
   400: "Bad Request", 401: "Unauthorized", 403: "Forbidden",
   404: "Not Found", 405: "Method Not Allowed", 406: "Not Acceptable",
   408: "Request Timeout", 409: "Conflict", 410: "Gone",
-  414: "URI Too Long", 415: "Unsupported Media Type", 
+  414: "URI Too Long", 415: "Unsupported Media Type",
   416: "Range Not Satisfiable", 418: "I'm a teapot",
   500: "Internal Server Error", 501: "Not Implemented"
 }
@@ -246,7 +247,7 @@ async def _handle_request(reader, writer):
       request.data = await _parse_json_body(reader, request.headers)
     if request.headers["content-type"].startswith("application/x-www-form-urlencoded"):
       form_data = await reader.read(int(request.headers["content-length"]))
-      request.form = _parse_query_string(form_data.decode()) 
+      request.form = _parse_query_string(form_data.decode())
 
   route = _match_route(request)
   if route:
@@ -271,7 +272,7 @@ async def _handle_request(reader, writer):
     response.add_header("Content-Type", content_type)
     if hasattr(body, '__len__'):
       response.add_header("Content-Length", len(body))
-  
+
   # write status line
   status_message = status_message_map.get(response.status, "Unknown")
   writer.write(f"HTTP/1.1 {response.status} {status_message}\r\n".encode("ascii"))
@@ -282,7 +283,7 @@ async def _handle_request(reader, writer):
 
   # blank line to denote end of headers
   writer.write("\r\n".encode("ascii"))
- 
+
   if isinstance(response, FileResponse):
     # file
     with open(response.file, "rb") as f:
@@ -301,10 +302,10 @@ async def _handle_request(reader, writer):
     # string/bytes
     writer.write(response.body)
     await writer.drain()
-  
+
   writer.close()
   await writer.wait_closed()
-  
+
   processing_time = time.ticks_ms() - request_start_time
   logging.info(f"> {request.method} {request.path} ({response.status} {status_message}) [{processing_time}ms]")
 
@@ -336,7 +337,7 @@ def catchall():
     set_callback(f)
     return f
   return _catchall
-  
+
 
 def redirect(url, status = 301):
   return Response("", status, {"Location": url})
@@ -346,10 +347,9 @@ def serve_file(file):
   return FileResponse(file)
 
 
-def run(host = "0.0.0.0", port = 80):
+def run(host = "0.0.0.0", port = 80) -> uasyncio.Task:
   logging.info("> starting web server on port {}".format(port))
-  loop.create_task(uasyncio.start_server(_handle_request, host, port))
-  loop.run_forever()
+  return loop.create_task(uasyncio.start_server(_handle_request, host, port))
 
 def stop():
   loop.stop()
