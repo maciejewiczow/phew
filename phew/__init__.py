@@ -5,7 +5,7 @@ __version__ = "0.0.2"
 # allocate relatively large blocks of ram.
 import gc, os, machine
 
-from src.lib.phew.phew.exceptions import APNotFoundException, ConnectingFailedException, WrongPasswordException
+from .exceptions import APNotFoundException, ConnectingFailedException, WrongPasswordException
 gc.threshold(50000)
 
 # phew! the Pico (or Python) HTTP Endpoint Wrangler
