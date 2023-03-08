@@ -112,10 +112,11 @@ class FileResponse(Response):
 
 
 class Route:
-  def __init__(self, path, handler, methods=["GET"]):
+  def __init__(self, path, handler, methods=["GET"], isAsync = False):
     self.path = path
     self.methods = methods
     self.handler = handler
+    self.isAsync = isAsync
     self.path_parts = path.split("/")
 
   # returns True if the supplied request matches this route
@@ -224,6 +225,11 @@ status_message_map = {
   500: "Internal Server Error", 501: "Not Implemented"
 }
 
+async def maybeAwaitResponse(handler, response):
+  if type(handler).__name__ in ('generator', 'closure') and not isinstance(response, Response):
+    return await response
+  else:
+    return response
 
 # handle an incoming request to the web server
 async def _handle_request(reader, writer):
@@ -250,12 +256,17 @@ async def _handle_request(reader, writer):
       request.form = _parse_query_string(form_data.decode())
 
   route = _match_route(request)
-  if route:
-    response = route.call_handler(request)
-  elif catchall_handler:
-    response = catchall_handler(request)
+  try:
+    if route:
+      response = route.call_handler(request)
+      if route.isAsync:
+        response = await response
+    elif catchall_handler:
+      response = catchall_handler(request)
+  except Exception as e:
+    print(f"Internal server error: {e}, {type(e)}")
+    response = f"Internal server error: {e}", 500
 
-  # if shorthand body generator only notation used then convert to tuple
   if type(response).__name__ == "generator":
     response = (response,)
 
@@ -311,9 +322,9 @@ async def _handle_request(reader, writer):
 
 
 # adds a new route to the routing table
-def add_route(path, handler, methods=["GET"]):
+def add_route(path, handler, methods=["GET"], isAsync = False):
   global _routes
-  _routes.append(Route(path, handler, methods))
+  _routes.append(Route(path, handler, methods, isAsync))
   # descending complexity order so most complex routes matched first
   _routes = sorted(_routes, key=lambda route: len(route.path_parts), reverse=True)
 
@@ -324,9 +335,9 @@ def set_callback(handler):
 
 
 # decorator shorthand for adding a route
-def route(path, methods=["GET"]):
+def route(path, methods=["GET"], isAsync = False):
   def _route(f):
-    add_route(path, f, methods=methods)
+    add_route(path, f, methods, isAsync)
     return f
   return _route
 
@@ -347,7 +358,7 @@ def serve_file(file):
   return FileResponse(file)
 
 
-def run(host = "0.0.0.0", port = 80) -> uasyncio.Task:
+def run(host = "0.0.0.0", port = 80):
   logging.info("> starting web server on port {}".format(port))
   return loop.create_task(uasyncio.start_server(_handle_request, host, port))
 

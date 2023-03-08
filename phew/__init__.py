@@ -84,7 +84,7 @@ def access_point(ssid, password = None):
   if password:
     wlan.config(password=password)
   else:
-    wlan.config(security=0) # disable password
+    wlan.config(security=0)
   wlan.active(True)
 
   return wlan
