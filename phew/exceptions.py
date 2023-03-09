@@ -4,7 +4,7 @@ class WifiException(Exception):
 class WrongPasswordException(WifiException):
     pass
 
-class APNotFoundException(WifiException):
+class SSIDNotFoundException(WifiException):
     pass
 
 class ConnectingFailedException(WifiException):

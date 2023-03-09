@@ -5,7 +5,7 @@ __version__ = "0.0.2"
 # allocate relatively large blocks of ram.
 import gc, os, machine
 
-from .exceptions import APNotFoundException, ConnectingFailedException, WrongPasswordException
+from .exceptions import SSIDNotFoundException, ConnectingFailedException, WrongPasswordException
 gc.threshold(50000)
 
 # phew! the Pico (or Python) HTTP Endpoint Wrangler
@@ -64,7 +64,7 @@ async def connect_to_wifi(ssid, password, timeout_seconds=30):
       raise ConnectingFailedException()
 
     if status == network.STAT_NO_AP_FOUND:
-      raise APNotFoundException()
+      raise SSIDNotFoundException()
 
     await uasyncio.sleep(0.25)
 
