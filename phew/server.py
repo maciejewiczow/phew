@@ -5,7 +5,6 @@ _routes = []
 catchall_handler = None
 loop = uasyncio.get_event_loop()
 
-
 def file_exists(filename):
   try:
     return (os.stat(filename)[0] & 0x4000) == 0
@@ -225,12 +224,6 @@ status_message_map = {
   500: "Internal Server Error", 501: "Not Implemented"
 }
 
-async def maybeAwaitResponse(handler, response):
-  if type(handler).__name__ in ('generator', 'closure') and not isinstance(response, Response):
-    return await response
-  else:
-    return response
-
 # handle an incoming request to the web server
 async def _handle_request(reader, writer):
   response = None
@@ -361,9 +354,3 @@ def serve_file(file):
 def run(host = "0.0.0.0", port = 80):
   logging.info("> starting web server on port {}".format(port))
   return loop.create_task(uasyncio.start_server(_handle_request, host, port))
-
-def stop():
-  loop.stop()
-
-def close():
-  loop.close()
