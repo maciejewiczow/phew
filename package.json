@@ -4,7 +4,8 @@
     ["phew/dns.py", "github:maciejewiczow/phew/phew/dns.py"],
     ["phew/logging.py", "github:maciejewiczow/phew/phew/logging.py"],
     ["phew/server.py", "github:maciejewiczow/phew/phew/server.py"],
-    ["phew/template.py", "github:maciejewiczow/phew/phew/template.py"]
+    ["phew/template.py", "github:maciejewiczow/phew/phew/template.py"],
+    ["phew/exceptions.py", "github:maciejewiczow/phew/phew/exceptions.py"]
   ],
   "deps": [
   ],
