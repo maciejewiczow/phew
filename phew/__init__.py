@@ -5,7 +5,8 @@ __version__ = "0.0.2"
 # allocate relatively large blocks of ram.
 import gc, os, machine
 
-from .exceptions import SSIDNotFoundException, ConnectingFailedException, WrongPasswordException
+from .exceptions import *
+from .template import *
 gc.threshold(50000)
 
 # phew! the Pico (or Python) HTTP Endpoint Wrangler
